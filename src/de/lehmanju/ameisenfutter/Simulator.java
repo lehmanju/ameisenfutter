@@ -1,7 +1,10 @@
 package de.lehmanju.ameisenfutter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javafx.application.Platform;
@@ -9,14 +12,10 @@ import javafx.application.Platform;
 public class Simulator
 {
     DrawArea area;
-    int mitteX, mitteY, groesseX = 500, groesseY = 500;
-    int ameisen = 100;
-    int futterStellen = 5;
-    int portionen = 50;
+    int mitteX, mitteY;
     Ameise[] amArray;
-    int[][] amVerteilung;//x, y, anzahl
-    int[][] futterVerteilung; //[index], [0] = x-Koord., [1] = y-Koord. , [2] = Anzahl Futter
-    int[][] pheromone; //x,y,Stärke
+    private Set<Change> changes;
+    Speicher speicher;
 
     protected class Ameise
     {
@@ -31,25 +30,18 @@ public class Simulator
         initialize();
     }
 
-    public Simulator(DrawArea area, int futter, int ameisen, int portProFutter, int groesseX, int groesseY)
+    public Simulator(Speicher sp, DrawArea ar)
     {
-        this.ameisen = ameisen;
-        this.futterStellen = futter;
-        portionen = portProFutter;
-        this.area = area;
-        this.groesseX = groesseX;
-        this.groesseY = groesseY;
+        speicher = sp;
+        area = ar;
         initialize();
     }
 
     private void initialize()
     {
-        amArray = new Ameise[ameisen];
-        amVerteilung = new int[groesseX][groesseY];
-        pheromone = new int[groesseX][groesseY];
-        futterVerteilung = new int[futterStellen][3];
-        mitteX = (int) Math.floor(groesseX / 2);
-        mitteY = (int) Math.floor(groesseY / 2);
+        amArray = new Ameise[speicher.ameisen];
+        mitteX = (int) Math.floor(speicher.groesseX / 2);
+        mitteY = (int) Math.floor(speicher.groesseY / 2);
         Platform.runLater(new Runnable()
         {
 
@@ -57,47 +49,34 @@ public class Simulator
             public void run()
             {
                 area.drawNest(mitteX, mitteY);
+                area.drawAnt(mitteX, mitteY, true);
             }
 
         });
-        for (int i = 0; i < futterStellen; i++)
+        for (int i = 0; i < speicher.futterStellen; i++)
         {
-            boolean vorhanden = false;
-            final int zX = (int) Math.floor((Math.random() * groesseX));
-            final int zY = (int) Math.floor((Math.random() * groesseY));
-            for (int n = 0; n < futterStellen; n++)
+            int zX;
+            int zY;
+            do
             {
-                if (futterVerteilung[n][0] == zX && futterVerteilung[n][1] == zX)
-                    vorhanden = true;
-            }
-            if (vorhanden)
-                continue;
-            futterVerteilung[i][0] = zX;
-            futterVerteilung[i][1] = zY;
-            futterVerteilung[i][2] = portionen;
+                zX = (int) Math.floor((Math.random() * speicher.groesseX));
+                zY = (int) Math.floor((Math.random() * speicher.groesseY));
+            } while (containsFutter(zX, zY));
+            speicher.futterVerteilung[zX][zY] = speicher.portionen;
+            final int ZX = zX;
+            final int ZY = zY;
             Platform.runLater(new Runnable()
             {
 
                 @Override
                 public void run()
                 {
-                    area.drawFutter(zX, zY, portionen);
+                    area.drawFutter(ZX, ZY, true);
                 }
-
             });
         }
-        Platform.runLater(new Runnable()
-        {
-
-            @Override
-            public void run()
-            {
-                area.drawAnt(mitteX, mitteY, ameisen);
-            }
-
-        });        
-        amVerteilung[mitteX][mitteY] = ameisen;
-        for (int i = 0; i < ameisen; i++)
+        speicher.amVerteilung[mitteX][mitteY] = speicher.ameisen;
+        for (int i = 0; i < speicher.ameisen; i++)
         {
             amArray[i] = new Ameise();
             amArray[i].x = mitteX;
@@ -106,11 +85,12 @@ public class Simulator
         }
     }
 
-    public void startSimulation(int timeIntervall)
+    public Set<Change> simulate(int iterations)
     {
-        while (true)
+        changes = new HashSet<Change>();
+        for (int count = 0; count < iterations; count++)
         {
-            for (int aN = 0; aN < ameisen; aN++)
+            for (int aN = 0; aN < speicher.ameisen; aN++)
             {
                 Ameise cA = amArray[aN];
                 if (cA.futter) //Futter im Inventar, im Nest?
@@ -120,14 +100,19 @@ public class Simulator
                         cA.futter = false;
                     } else
                     {
-                        pheromone[cA.x][cA.y]++;
+                        speicher.pheromone[cA.x][cA.y]++;
+                        changes.add(new Change('P', cA.x, cA.y));
                         toNest(cA);
                     }
                 } else
                 {
-                    if (futterGefunden(cA))
-                        continue;
-                    else
+                    if (speicher.futterVerteilung[cA.x][cA.y] > 0)
+                    {
+                        cA.futter = true;
+                        speicher.futterVerteilung[cA.x][cA.y]--;
+                        Change aen = new Change('F', cA.x, cA.y);
+                        changes.add(aen);
+                    } else
                     {
                         if (nextPPos(cA))
                             continue;
@@ -140,30 +125,8 @@ public class Simulator
                     }
                 }
             }
-            updateScreen();
-            try
-            {
-                Thread.sleep(timeIntervall);
-            } catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-
-        }
-    }
-
-    private boolean futterGefunden(Ameise a)
-    {
-        for (int n = 0; n < futterStellen; n++)
-        {
-            if (futterVerteilung[n][0] == a.x && futterVerteilung[n][1] == a.y && futterVerteilung[n][2] > 0)
-            {
-                a.futter = true;
-                futterVerteilung[n][2]--;
-                return true;
-            }
-        }
-        return false;
+        }       
+        return changes;
     }
 
     private boolean nextPPos(Ameise a)
@@ -175,18 +138,16 @@ public class Simulator
         for (int in = 0; in < availDirections.size(); in++)
         {
             int[] ar = availDirections.get(in);
-            if (pheromone[ar[0] + a.x][ar[1] + a.y] > 0)
+            if (speicher.pheromone[ar[0] + a.x][ar[1] + a.y] > 0)
                 notNull = true;
-            if (pheromone[ar[0] + a.x][ar[1] + a.y] > maxPhero)
+            if (speicher.pheromone[ar[0] + a.x][ar[1] + a.y] > maxPhero)
             {
-                maxPhero = pheromone[ar[0] + a.x][ar[1] + a.y];
+                maxPhero = speicher.pheromone[ar[0] + a.x][ar[1] + a.y];
                 xyD = ar;
             }
         }
         if (notNull)
-        {
             setAPos(a, xyD[0], xyD[1]);
-        }
         return notNull;
     }
 
@@ -195,46 +156,16 @@ public class Simulator
         setAPos(a, mitteX - a.x, mitteY - a.y);
     }
 
-    public void updateScreen()
-    {
-        for (int a = 0; a < groesseX; a++)
-            for (int b = 0; b < groesseY; b++)
-            {
-                final int rA = a;
-                final int rB = b;
-                Platform.runLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        area.drawAnt(rA, rB, amVerteilung[rA][rB]);
-                        area.drawPheromone(rA, rB, pheromone[rA][rB]);
-                    }
-
-                });
-            }
-        for (int i = 0; i < futterStellen; i++)
-        {
-            final int index = i;
-            Platform.runLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    area.drawFutter(futterVerteilung[index][0], futterVerteilung[index][1], futterVerteilung[index][2]);
-                }
-
-            });
-        }
-
-    }
-
     protected void setAPos(Ameise a, int dx, int dy)
     {
-        amVerteilung[a.x][a.y]--;//Ameise von aktueller Position "subtrahieren"
+        speicher.amVerteilung[a.x][a.y]--;//Ameise von aktueller Position "subtrahieren"
+        Change ae1 = new Change('A', a.x, a.y);
         a.x += dx;
         a.y += dy;
-        amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzufügen
+        speicher.amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzufügen
+        Change ae2 = new Change('A', a.x, a.y);
+        changes.add(ae1);
+        changes.add(ae2);
     }
 
     protected void setAPos(Ameise a, int direction)
@@ -254,6 +185,11 @@ public class Simulator
             setAPos(a, 1, 0);
             break;
         }
+    }
+
+    public boolean containsFutter(int x, int y)
+    {
+        return speicher.futterVerteilung[x][y] > 0;
     }
 
     public List<int[]> getAvailableDirections(Ameise a)
@@ -282,7 +218,7 @@ public class Simulator
                 dY = 0;
                 break;
             }
-            if ((dX + a.x) < groesseX && (dY + a.y) < groesseY && (dX + a.x) >= 0 && (dY + a.y) >= 0)
+            if ((dX + a.x) < speicher.groesseX && (dY + a.y) < speicher.groesseY && (dX + a.x) >= 0 && (dY + a.y) >= 0)
                 tempL.add(new int[] { dX, dY });
         }
         return tempL;

@@ -4,4 +4,21 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<TitledPane fx:id="p" animated="false" collapsible="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="600.0" text="Keine Informationen" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" />
+
+<AnchorPane fx:id="root" prefHeight="511.0" prefWidth="698.0" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <MenuBar layoutY="1.0" prefHeight="25.0" prefWidth="698.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <menus>
+          <Menu mnemonicParsing="false" text="Simulation">
+            <items>
+                  <MenuItem fx:id="start" mnemonicParsing="false" text="Start" />
+                  <MenuItem fx:id="pause" mnemonicParsing="false" text="Pause" />
+                  <MenuItem fx:id="properties" mnemonicParsing="false" onAction="#changeSettings" text="Einstellungen" />
+              <MenuItem fx:id="beenden" mnemonicParsing="false" onAction="#endSimulation" text="Beenden" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
+      <TitledPane fx:id="titledPane" animated="false" collapsible="false" layoutY="27.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="511.0" prefWidth="698.0" text="Keine Informationen" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0" />
+   </children>
+</AnchorPane>
