@@ -1,9 +1,6 @@
 package de.lehmanju.ameisenfutter;
 
-import javafx.stage.Stage;
-import javafx.util.Duration;
-
-import java.util.Set;
+import java.util.List;
 
 import javafx.application.Application;
 import javafx.concurrent.WorkerStateEvent;
@@ -13,12 +10,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class Launcher extends Application implements EventHandler<WorkerStateEvent>
 {
     Speicher sp;
     DrawArea area;
     SimulationService simService;
+    int width = 20;
     @FXML
     TitledPane titledPane;
     @FXML
@@ -36,12 +36,15 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
         loader.setController(this);
         loader.load();
         sp = new Speicher(5, 100, 50, 500, 500);
-        area = new DrawArea(titledPane, sp);
+        area = new DrawArea(titledPane, sp, width);
         Scene scene = new Scene(root, 800, 700);
         stage.setScene(scene);
         stage.show();
-        Simulator sim = new Simulator(sp, area);
-        simService = new SimulationService(sim);
+        Simulator sim = new Simulator(sp);
+        simService = new SimulationService(sim, sp, width);
+        List<GChange> initCh = simService.getInitList();
+        for (GChange ch : initCh)
+            area.drawImage(ch.view, ch.draw);
         simService.setOnSucceeded(this);
         simService.setPeriod(new Duration(2000));
         simService.setIterations(100);
@@ -51,45 +54,17 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
     @Override
     public void handle(WorkerStateEvent wsevent)
     {
-        //System.out.println("Task beendet");
-        Set<Change> changes = simService.getValue();
-        for (Change ch : changes)
+        List<GChange> changes = simService.getValue();
+        for (GChange ch : changes)
         {
-            switch (ch.type)
-            {
-            case 'A':
-            {
-                if (sp.amVerteilung[ch.x][ch.y] > 0)
-                    area.drawAnt(ch.x, ch.y, true);
-                else
-                    area.drawAnt(ch.x, ch.y, false);
-                break;
-            }
-            case 'P':
-            {
-                if (sp.pheromone[ch.x][ch.y] > 0)
-                    area.drawPheromone(ch.x, ch.y, true);
-                else
-                    area.drawPheromone(ch.x, ch.y, false);
-                break;
-            }
-            case 'F':
-            {
-                if (sp.futterVerteilung[ch.x][ch.y] > 0)
-                    area.drawFutter(ch.x, ch.y, true);
-                else
-                    area.drawFutter(ch.x, ch.y, false);
-                break;
-            }
-            }
+            area.drawImage(ch.view, ch.draw);
         }
-        //simService.restart();
     }
 
     @FXML
     public void startSimulation()
     {
-
+        simService.start();
     }
 
     @FXML

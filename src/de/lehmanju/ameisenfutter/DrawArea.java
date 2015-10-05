@@ -1,18 +1,13 @@
 package de.lehmanju.ameisenfutter;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
 import javafx.event.EventHandler;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TitledPane;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.*;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 
 public class DrawArea implements EventHandler<MouseEvent>
@@ -20,56 +15,14 @@ public class DrawArea implements EventHandler<MouseEvent>
     Pane rootPane;
     TitledPane tPane;
     int width = 20;
-    ImageView[] views;
-    Map<XYPoint, ImageView> futterPos;
-    Map<XYPoint, Integer> ameisenPos;
-    Queue<Integer> unusedViews;
-    Map<XYPoint, ImageView> pheromonPos;
-    Image ameise = new Image("Ameise.png");
-    Image futter = new Image("Futter.png");
-    Image pheromon = new Image("Pheromon.png");
     Speicher speicher;
 
-    protected class XYPoint
+    public DrawArea(TitledPane p, Speicher sp, int width)
     {
-        int x;
-        int y;
-
-        public XYPoint(int x, int y)
-        {
-            this.x = x;
-            this.y = y;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return x * 15 + y * 15;
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (obj instanceof XYPoint)
-            {
-                XYPoint p = (XYPoint) obj;
-                if (p.x == x && p.y == y)
-                    return true;
-            }
-            return false;
-        }
-    }
-
-    public DrawArea(TitledPane p, Speicher sp)
-    {
+        this.width = width;
         rootPane = new Pane();
         tPane = p;
         speicher = sp;
-        futterPos = new HashMap<>(speicher.futterStellen + 1, 1);
-        ameisenPos = new HashMap<>(speicher.ameisen + 1, 1);
-        pheromonPos = new HashMap<>(speicher.ameisen + 1);
-        views = new ImageView[speicher.ameisen];
-        unusedViews = new LinkedList<>();
         Canvas background = new Canvas(speicher.groesseX * (width - 1) + 1, speicher.groesseY * (width - 1) + 1);
         GraphicsContext gc = background.getGraphicsContext2D();
         gc.setFill(Color.WHITE);
@@ -88,91 +41,14 @@ public class DrawArea implements EventHandler<MouseEvent>
         ScrollPane scroll = new ScrollPane();
         scroll.setContent(rootPane);
         tPane.setContent(scroll);
-        for (int i = 0; i < speicher.ameisen; i++)
-        {
-            views[i] = new ImageView();
-            views[i].setImage(ameise);
-            unusedViews.add(i);
-        }
-
     }
 
-    public void drawNest(int x, int y)
+    public void drawImage(ImageView view, boolean draw)
     {
-        Image nest = new Image("Nest.png");
-        ImageView view = new ImageView();
-        view.setImage(nest);
-        view.setX(x * (width - 1) + 1);
-        view.setY(y * (width - 1) + 1);
-        rootPane.getChildren().add(view);
-    }
-
-    public void drawAnt(int x, int y, boolean draw)
-    {
-        XYPoint xy = new XYPoint(x, y);
-        if (ameisenPos.containsKey(xy))
-        {
-            if (!draw)
-            {
-                int index = ameisenPos.get(xy);
-                ameisenPos.remove(xy);
-                rootPane.getChildren().remove(views[index]);
-                unusedViews.add(index);
-            }
-        } else
-        {
-            if (!draw)
-                return;
-            int index = unusedViews.poll();
-            ameisenPos.put(xy, index);
-            ImageView v = views[index];
-            v.relocate(x * (width - 1) + 1, y * (width - 1) + 1);
-            rootPane.getChildren().add(v);
-        }
-    }
-
-    public void drawFutter(int x, int y, boolean draw)
-    {
-        XYPoint xy = new XYPoint(x, y);
-        if (futterPos.containsKey(xy))
-        {
-            if (!draw)
-            {
-                rootPane.getChildren().remove(futterPos.get(xy));
-                futterPos.remove(xy);
-            }
-        } else
-        {
-            if (!draw)
-                return;
-            ImageView v = new ImageView();
-            futterPos.put(xy, v);
-            v.setImage(futter);
-            v.relocate(x * (width - 1) + 1, y * (width - 1) + 1);
-            rootPane.getChildren().add(v);
-        }
-    }
-
-    public void drawPheromone(int x, int y, boolean draw)
-    {
-        XYPoint xy = new XYPoint(x, y);
-        if (pheromonPos.containsKey(xy))
-        {
-            if (!draw)
-            {
-                rootPane.getChildren().remove(pheromonPos.get(xy));
-                pheromonPos.remove(xy);
-            }
-        } else
-        {
-            if (!draw)
-                return;
-            ImageView v = new ImageView();
-            pheromonPos.put(xy, v);
-            v.setImage(pheromon);
-            v.relocate(x * (width - 1) + 1, y * (width - 1) + 1);
-            rootPane.getChildren().add(v);
-        }
+        if (draw)
+            rootPane.getChildren().add(view);
+        else
+            rootPane.getChildren().remove(view);
     }
 
     @Override

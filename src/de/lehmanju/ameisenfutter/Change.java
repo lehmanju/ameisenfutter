@@ -34,5 +34,5 @@ public class Change
     public String toString()
     {
         return "Change[" + type + "," + x + "," + y + "]";
-    }
+    }    
 }

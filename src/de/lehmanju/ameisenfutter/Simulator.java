@@ -2,16 +2,12 @@ package de.lehmanju.ameisenfutter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-import javafx.application.Platform;
-
 public class Simulator
 {
-    DrawArea area;
     int mitteX, mitteY;
     Ameise[] amArray;
     private Set<Change> changes;
@@ -24,16 +20,9 @@ public class Simulator
         int lastDir;
     }
 
-    public Simulator(DrawArea area)
-    {
-        this.area = area;
-        initialize();
-    }
-
-    public Simulator(Speicher sp, DrawArea ar)
+    public Simulator(Speicher sp)
     {
         speicher = sp;
-        area = ar;
         initialize();
     }
 
@@ -42,46 +31,13 @@ public class Simulator
         amArray = new Ameise[speicher.ameisen];
         mitteX = (int) Math.floor(speicher.groesseX / 2);
         mitteY = (int) Math.floor(speicher.groesseY / 2);
-        Platform.runLater(new Runnable()
-        {
-
-            @Override
-            public void run()
-            {
-                area.drawNest(mitteX, mitteY);
-                area.drawAnt(mitteX, mitteY, true);
-            }
-
-        });
-        for (int i = 0; i < speicher.futterStellen; i++)
-        {
-            int zX;
-            int zY;
-            do
-            {
-                zX = (int) Math.floor((Math.random() * speicher.groesseX));
-                zY = (int) Math.floor((Math.random() * speicher.groesseY));
-            } while (containsFutter(zX, zY));
-            speicher.futterVerteilung[zX][zY] = speicher.portionen;
-            final int ZX = zX;
-            final int ZY = zY;
-            Platform.runLater(new Runnable()
-            {
-
-                @Override
-                public void run()
-                {
-                    area.drawFutter(ZX, ZY, true);
-                }
-            });
-        }
-        speicher.amVerteilung[mitteX][mitteY] = speicher.ameisen;
         for (int i = 0; i < speicher.ameisen; i++)
         {
             amArray[i] = new Ameise();
             amArray[i].x = mitteX;
             amArray[i].y = mitteY;
             amArray[i].futter = false;
+            amArray[i].lastDir = -1;
         }
     }
 
@@ -125,7 +81,7 @@ public class Simulator
                     }
                 }
             }
-        }       
+        }
         return changes;
     }
 
@@ -153,7 +109,12 @@ public class Simulator
 
     private void toNest(Ameise a)
     {
-        setAPos(a, mitteX - a.x, mitteY - a.y);
+        int dx = mitteX - a.x;
+        int dy = mitteY - a.y;
+        if (dx == dy || Math.abs(dx) > Math.abs(dy))
+            setAPos(a, (int) Math.signum(dx), 0);
+        else
+            setAPos(a, 0, (int) Math.signum(dy));
     }
 
     protected void setAPos(Ameise a, int dx, int dy)
@@ -197,7 +158,7 @@ public class Simulator
         ArrayList<int[]> tempL = new ArrayList<>();
         int dX = 0;
         int dY = 0;
-        for (int i = 0; i < 4; i++)
+        for (int i = a.lastDir + 1; i < 4; i++)
         {
             switch (i)
             {
