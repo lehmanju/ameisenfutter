@@ -58,7 +58,14 @@ public class DrawArea implements EventHandler<MouseEvent>
         int y = (int) Math.floor(event.getY() / (width - 1));
         if (x >= speicher.groesseX || y >= speicher.groesseY)
             return;
-        tPane.setText("(X:" + (x + 1) + ";Y:" + (y + 1) + ") Ameisen: " + speicher.amVerteilung[x][y] + "; Futter: " + speicher.futterVerteilung[x][y] + "; Pheromone: " + speicher.pheromone[x][y]);
+        String text;
+        if (x == speicher.mitteX && y == speicher.mitteY)
+            text = "(X:" + (x + 1) + ";Y:" + (y + 1) + ") Ameisen: " + speicher.amVerteilung[x][y] + "; Futter: "
+                    + speicher.futterNest + "; Pheromone: " + speicher.pheromone[x][y];
+        else
+            text = "(X:" + (x + 1) + ";Y:" + (y + 1) + ") Ameisen: " + speicher.amVerteilung[x][y] + "; Futter: "
+                    + speicher.futterVerteilung[x][y] + "; Pheromone: " + speicher.pheromone[x][y];
+        tPane.setText(text);
     }
 
 }

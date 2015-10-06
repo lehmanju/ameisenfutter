@@ -40,6 +40,7 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
         Scene scene = new Scene(root, 800, 700);
         stage.setScene(scene);
         stage.show();
+        //stage.setWidth(stage.getWidth() + 1);
         Simulator sim = new Simulator(sp);
         simService = new SimulationService(sim, sp, width);
         List<GChange> initCh = simService.getInitList();
@@ -47,8 +48,8 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
             area.drawImage(ch.view, ch.draw);
         simService.setOnSucceeded(this);
         simService.setPeriod(new Duration(2000));
-        simService.setIterations(100);
-        simService.start();
+        simService.setIterations(10);
+        //simService.start();
     }
 
     @Override
@@ -64,19 +65,19 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
     @FXML
     public void startSimulation()
     {
-        simService.start();
+        simService.restart();
     }
 
     @FXML
     public void pauseSimulation()
     {
-
+        simService.pause();
     }
 
     @FXML
-    public void endSimulation()
+    public void resetSimulation()
     {
-        simService.cancel();
+        simService.pause();
     }
 
     @FXML

@@ -2,6 +2,7 @@ package de.lehmanju.ameisenfutter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,6 +19,22 @@ public class Simulator
         int x, y;
         boolean futter;
         int lastDir;
+
+        public Ameise()
+        {
+            x = 0;
+            y = 0;
+            futter = false;
+            lastDir = -1;
+        }
+
+        public Ameise(Ameise other)
+        {
+            x = other.x;
+            y = other.y;
+            futter = other.futter;
+            lastDir = other.lastDir;
+        }
     }
 
     public Simulator(Speicher sp)
@@ -41,11 +58,31 @@ public class Simulator
         }
     }
 
-    public Set<Change> simulate(int iterations)
+    public Set<Change> simulate(int iterations, int phTimeout)
     {
         changes = new HashSet<Change>();
+        for (int n = 0; n < speicher.groesseX; n++)
+        {
+            for (int i = 0; i < speicher.groesseY; i++)
+            {
+
+            }
+        }
         for (int count = 0; count < iterations; count++)
         {
+            speicher.steps++;
+            if ((speicher.steps % phTimeout) == 0)
+                for (Iterator<XYPoint> it = speicher.phero.iterator(); it.hasNext();)
+                {
+                    XYPoint p = it.next();
+                    if (speicher.pheromone[p.x][p.y] == 0)
+                        it.remove();
+                    if (speicher.pheromone[p.x][p.y] > 0)
+                    {
+                        speicher.pheromone[p.x][p.y]--;
+                        changes.add(new Change('P', p.x, p.y));
+                    }
+                }
             for (int aN = 0; aN < speicher.ameisen; aN++)
             {
                 Ameise cA = amArray[aN];
@@ -54,9 +91,11 @@ public class Simulator
                     if (cA.x == mitteX && cA.y == mitteY)
                     {
                         cA.futter = false;
+                        speicher.futterNest++;
                     } else
                     {
                         speicher.pheromone[cA.x][cA.y]++;
+                        speicher.phero.add(new XYPoint(cA.x, cA.y));
                         changes.add(new Change('P', cA.x, cA.y));
                         toNest(cA);
                     }
@@ -77,6 +116,7 @@ public class Simulator
                             List<int[]> availDirections = getAvailableDirections(cA);
                             int rD = ThreadLocalRandom.current().nextInt(0, availDirections.size());
                             setAPos(cA, availDirections.get(rD)[0], availDirections.get(rD)[1]);
+                            cA.lastDir = availDirections.get(rD)[2];
                         }
                     }
                 }
@@ -158,7 +198,7 @@ public class Simulator
         ArrayList<int[]> tempL = new ArrayList<>();
         int dX = 0;
         int dY = 0;
-        for (int i = a.lastDir + 1; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             switch (i)
             {
@@ -179,8 +219,9 @@ public class Simulator
                 dY = 0;
                 break;
             }
-            if ((dX + a.x) < speicher.groesseX && (dY + a.y) < speicher.groesseY && (dX + a.x) >= 0 && (dY + a.y) >= 0)
-                tempL.add(new int[] { dX, dY });
+            if ((dX + a.x) < speicher.groesseX && (dY + a.y) < speicher.groesseY && (dX + a.x) >= 0 && (dY + a.y) >= 0
+                    && a.lastDir != i)
+                tempL.add(new int[] { dX, dY, i });
         }
         return tempL;
     }

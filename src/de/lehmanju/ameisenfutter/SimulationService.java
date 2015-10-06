@@ -10,15 +10,19 @@ import java.util.Queue;
 
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-public class SimulationService extends ScheduledService<List<GChange>>
+public class SimulationService extends ScheduledService<List<GChange>> implements EventHandler<WorkerStateEvent>
 {
     Speicher sp;
     Simulator sim;
     int iterations;
+    int timeout;
     int width = 20;
+    boolean paused = false;
     ImageView[] views;
     Map<XYPoint, ImageView> futterPos;
     Map<XYPoint, Integer> ameisenPos;
@@ -29,36 +33,6 @@ public class SimulationService extends ScheduledService<List<GChange>>
     Image futter = new Image("Futter.png");
     Image pheromon = new Image("Pheromon.png");
     Image nest = new Image("Nest.png");
-
-    protected class XYPoint
-    {
-        int x;
-        int y;
-
-        public XYPoint(int x, int y)
-        {
-            this.x = x;
-            this.y = y;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return x * 15 + y * 15;
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (obj instanceof XYPoint)
-            {
-                XYPoint p = (XYPoint) obj;
-                if (p.x == x && p.y == y)
-                    return true;
-            }
-            return false;
-        }
-    }
 
     private class ChangeComparator implements Comparator<Change>
     {
@@ -77,13 +51,13 @@ public class SimulationService extends ScheduledService<List<GChange>>
     @Override
     protected Task<List<GChange>> createTask()
     {
-        return new Task<List<GChange>>()
+        Task<List<GChange>> t = new Task<List<GChange>>()
         {
 
             @Override
             protected List<GChange> call() throws Exception
             {
-                List<Change> changes = new LinkedList<>(sim.simulate(iterations));
+                List<Change> changes = new LinkedList<>(sim.simulate(iterations, timeout));
                 Collections.sort(changes, comp);
                 List<GChange> graphicCh = new LinkedList<>();
                 for (Change ch : changes)
@@ -118,6 +92,8 @@ public class SimulationService extends ScheduledService<List<GChange>>
             }
 
         };
+        t.setOnSucceeded(this);
+        return t;
     }
 
     private GChange getAntChange(int x, int y, boolean draw)
@@ -199,6 +175,7 @@ public class SimulationService extends ScheduledService<List<GChange>>
         width = w;
         this.sim = sim;
         iterations = 1;
+        timeout = 25;
         comp = new ChangeComparator();
         futterPos = new HashMap<>(speicher.futterStellen + 1, 1);
         ameisenPos = new HashMap<>(speicher.ameisen + 1, 1);
@@ -215,17 +192,15 @@ public class SimulationService extends ScheduledService<List<GChange>>
 
     public List<GChange> getInitList()
     {
-        int mitteX = (int) Math.floor(sp.groesseX / 2);
-        int mitteY = (int) Math.floor(sp.groesseY / 2);
         List<GChange> initChanges = new LinkedList<>();
         ImageView n = new ImageView();
         n.setImage(nest);
-        n.relocate(mitteX * (width - 1) + 1, mitteY * (width - 1) + 1);
+        n.relocate(sp.mitteX * (width - 1) + 1, sp.mitteY * (width - 1) + 1);
         GChange nestChange = new GChange(n, true);
-        GChange antChange = getAntChange(mitteX, mitteY, true);
-        initChanges.add(antChange);
+        GChange antChange = getAntChange(sp.mitteX, sp.mitteY, true);
         initChanges.add(nestChange);
-        sp.amVerteilung[mitteX][mitteY] = sp.ameisen;
+        initChanges.add(antChange);
+        sp.amVerteilung[sp.mitteX][sp.mitteY] = sp.ameisen;
         for (int i = 0; i < sp.futterStellen; i++)
         {
             int zX;
@@ -239,16 +214,11 @@ public class SimulationService extends ScheduledService<List<GChange>>
             GChange futterCh = getFutterChange(zX, zY, true);
             initChanges.add(futterCh);
         }
-        sp.futterVerteilung[260][260] = sp.portionen;
-        GChange gf = getFutterChange(260, 260, true);
-        initChanges.add(gf);
+        /*
+         * sp.futterVerteilung[260][260] = sp.portionen; GChange gf =
+         * getFutterChange(260, 260, true); initChanges.add(gf);
+         */
         return initChanges;
-    }
-
-    public SimulationService(Simulator sim)
-    {
-        this.sim = sim;
-        iterations = 1;
     }
 
     public boolean setIterations(int it)
@@ -264,6 +234,23 @@ public class SimulationService extends ScheduledService<List<GChange>>
     public int getIterations()
     {
         return iterations;
+    }
+
+    public void pause()
+    {
+        System.out.println("Pause vorgemerkt");
+        paused = true;
+    }
+
+    @Override
+    public void handle(WorkerStateEvent event)
+    {
+        if (paused)
+        {
+            paused = false;
+            this.cancel();
+            System.out.println("Pause ausgeführt");
+        }
     }
 
 }

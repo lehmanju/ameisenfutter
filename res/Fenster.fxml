@@ -4,17 +4,16 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-
 <AnchorPane fx:id="root" prefHeight="511.0" prefWidth="698.0" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <MenuBar layoutY="1.0" prefHeight="25.0" prefWidth="698.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <menus>
           <Menu mnemonicParsing="false" text="Simulation">
             <items>
-                  <MenuItem fx:id="start" mnemonicParsing="false" text="Start" />
-                  <MenuItem fx:id="pause" mnemonicParsing="false" text="Pause" />
+                  <MenuItem fx:id="start" mnemonicParsing="false" onAction="#startSimulation" text="Start" />
+                  <MenuItem fx:id="pause" mnemonicParsing="false" onAction="#pauseSimulation" text="Pause" />
                   <MenuItem fx:id="properties" mnemonicParsing="false" onAction="#changeSettings" text="Einstellungen" />
-              <MenuItem fx:id="beenden" mnemonicParsing="false" onAction="#endSimulation" text="Beenden" />
+              <MenuItem fx:id="reset" mnemonicParsing="false" onAction="#resetSimulation" text="Zurücksetzen" />
             </items>
           </Menu>
         </menus>
