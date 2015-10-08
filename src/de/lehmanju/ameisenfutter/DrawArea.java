@@ -59,7 +59,7 @@ public class DrawArea implements EventHandler<MouseEvent>
         if (x >= speicher.groesseX || y >= speicher.groesseY)
             return;
         String text;
-        if (x == speicher.mitteX && y == speicher.mitteY)
+        if (x == speicher.nestX && y == speicher.nestY)
             text = "(X:" + (x + 1) + ";Y:" + (y + 1) + ") Ameisen: " + speicher.amVerteilung[x][y] + "; Futter: "
                     + speicher.futterNest + "; Pheromone: " + speicher.pheromone[x][y];
         else

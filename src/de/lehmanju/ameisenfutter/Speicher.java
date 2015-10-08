@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class Speicher
 {
-    int groesseX, groesseY, mitteX, mitteY;
+    int groesseX, groesseY, nestX, nestY;
     int ameisen;
     int futterStellen;
     int portionen;
@@ -15,6 +15,8 @@ public class Speicher
     int[][] futterVerteilung; //[index], [0] = x-Koord., [1] = y-Koord. , [2] = Anzahl Futter
     int[][] pheromone; //x,y,Stärke
     Set<XYPoint> phero = new HashSet<>();
+    int timeout;
+    int iterations;
 
     public Speicher()
     {
@@ -28,10 +30,12 @@ public class Speicher
         this.futterStellen = futter;
         this.ameisen = ameisen;
         this.portionen = portionen;
-        mitteX = (int) Math.floor(groesseX / 2);
-        mitteY = (int) Math.floor(groesseY / 2);
+        nestX = (int) Math.floor(groesseX / 2);
+        nestY = (int) Math.floor(groesseY / 2);
         steps = 0;
         futterNest = 0;
+        timeout = 30;
+        iterations = 1;
         amVerteilung = new int[this.groesseX][this.groesseY];
         futterVerteilung = new int[groesseX][groesseX];
         pheromone = new int[this.groesseX][this.groesseY];

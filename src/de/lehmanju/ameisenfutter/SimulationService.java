@@ -19,8 +19,6 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
 {
     Speicher sp;
     Simulator sim;
-    int iterations;
-    int timeout;
     int width = 20;
     boolean paused = false;
     ImageView[] views;
@@ -57,7 +55,7 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
             @Override
             protected List<GChange> call() throws Exception
             {
-                List<Change> changes = new LinkedList<>(sim.simulate(iterations, timeout));
+                List<Change> changes = new LinkedList<>(sim.simulate(sp.iterations, sp.timeout));
                 Collections.sort(changes, comp);
                 List<GChange> graphicCh = new LinkedList<>();
                 for (Change ch : changes)
@@ -174,8 +172,6 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
         sp = speicher;
         width = w;
         this.sim = sim;
-        iterations = 1;
-        timeout = 25;
         comp = new ChangeComparator();
         futterPos = new HashMap<>(speicher.futterStellen + 1, 1);
         ameisenPos = new HashMap<>(speicher.ameisen + 1, 1);
@@ -195,12 +191,12 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
         List<GChange> initChanges = new LinkedList<>();
         ImageView n = new ImageView();
         n.setImage(nest);
-        n.relocate(sp.mitteX * (width - 1) + 1, sp.mitteY * (width - 1) + 1);
+        n.relocate(sp.nestX * (width - 1) + 1, sp.nestY * (width - 1) + 1);
         GChange nestChange = new GChange(n, true);
-        GChange antChange = getAntChange(sp.mitteX, sp.mitteY, true);
+        GChange antChange = getAntChange(sp.nestX, sp.nestY, true);
         initChanges.add(nestChange);
         initChanges.add(antChange);
-        sp.amVerteilung[sp.mitteX][sp.mitteY] = sp.ameisen;
+        sp.amVerteilung[sp.nestX][sp.nestY] = sp.ameisen;
         for (int i = 0; i < sp.futterStellen; i++)
         {
             int zX;
@@ -225,15 +221,10 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
     {
         if (it > 0)
         {
-            iterations = it;
+            sp.iterations = it;
             return true;
         } else
             return false;
-    }
-
-    public int getIterations()
-    {
-        return iterations;
     }
 
     public void pause()
@@ -252,5 +243,4 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
             System.out.println("Pause ausgeführt");
         }
     }
-
 }
