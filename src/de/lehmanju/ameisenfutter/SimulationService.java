@@ -240,7 +240,7 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
         {
             paused = false;
             this.cancel();
-            System.out.println("Pause ausgeführt");
+            System.out.println("Pause ausgefï¿½hrt");
         }
     }
 }
