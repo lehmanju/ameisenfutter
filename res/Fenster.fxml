@@ -13,7 +13,6 @@
                   <MenuItem fx:id="start" mnemonicParsing="false" onAction="#startSimulation" text="Start" />
                   <MenuItem fx:id="pause" mnemonicParsing="false" onAction="#pauseSimulation" text="Pause" />
                   <MenuItem fx:id="properties" mnemonicParsing="false" onAction="#changeSettings" text="Einstellungen" />
-              <MenuItem fx:id="reset" mnemonicParsing="false" onAction="#resetSimulation" text="Zurücksetzen" />
             </items>
           </Menu>
         </menus>

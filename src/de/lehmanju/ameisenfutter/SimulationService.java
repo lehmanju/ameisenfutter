@@ -229,7 +229,7 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
 
     public void pause()
     {
-        System.out.println("Pause vorgemerkt");
+        //System.out.println("Pause vorgemerkt");
         paused = true;
     }
 
@@ -240,7 +240,7 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
         {
             paused = false;
             this.cancel();
-            System.out.println("Pause ausgefï¿½hrt");
+            //System.out.println("Pause ausgeführt");
         }
     }
 }
