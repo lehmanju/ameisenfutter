@@ -45,14 +45,12 @@ public class Simulator
 
     private void initialize()
     {
-        amArray = new Ameise[speicher.ameisen];
-        mitteX = (int) Math.floor(speicher.groesseX / 2);
-        mitteY = (int) Math.floor(speicher.groesseY / 2);
+        amArray = new Ameise[speicher.ameisen];        
         for (int i = 0; i < speicher.ameisen; i++)
         {
             amArray[i] = new Ameise();
-            amArray[i].x = mitteX;
-            amArray[i].y = mitteY;
+            amArray[i].x = speicher.nestX;
+            amArray[i].y = speicher.nestY;
             amArray[i].futter = false;
             amArray[i].lastDir = -1;
         }
@@ -163,7 +161,7 @@ public class Simulator
         Change ae1 = new Change('A', a.x, a.y);
         a.x += dx;
         a.y += dy;
-        speicher.amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzufügen
+        speicher.amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzufï¿½gen
         Change ae2 = new Change('A', a.x, a.y);
         changes.add(ae1);
         changes.add(ae2);

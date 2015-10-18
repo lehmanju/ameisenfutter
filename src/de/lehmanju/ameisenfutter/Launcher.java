@@ -19,8 +19,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-public class Launcher extends Application implements EventHandler<WorkerStateEvent>
-{
+public class Launcher extends Application implements EventHandler<WorkerStateEvent> {
     Speicher sp;
     DrawArea area;
     SimulationService simService;
@@ -49,28 +48,25 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
     @FXML
     TextField iterationsF;
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         launch(args);
     }
 
     @Override
-    public void start(Stage stage) throws Exception
-    {
+    public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/Fenster.fxml"));
         loader.setController(this);
         loader.load();
-        //mainScene = reset(100, new int[] { 500, 500 }, new int[] { 250, 250 }, 5, 1000, 1);
+        // mainScene = reset(100, new int[] { 500, 500 }, new int[] { 250, 250
+        // }, 5, 1000, 1);
         sp = new Speicher(5, 100, 50, 500, 500);
         area = new DrawArea(titledPane, sp, width);
         Scene scene = new Scene(root, 800, 700);
         stage.setScene(scene);
-        try
-        {
+        try {
             stage.show();
-        } catch (Exception e)
-        {
-            //Anzeige Ausnahme
+        } catch (Exception e) {
+            // Anzeige Ausnahme
         }
         Simulator sim = new Simulator(sp);
         simService = new SimulationService(sim, sp, width);
@@ -82,41 +78,34 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
     }
 
     @Override
-    public void handle(WorkerStateEvent wsevent)
-    {
+    public void handle(WorkerStateEvent wsevent) {        
         List<GChange> changes = simService.getValue();
-        for (GChange ch : changes)
-        {
+        for (GChange ch : changes) {
             area.drawImage(ch.view, ch.draw);
         }
     }
 
     @FXML
-    public void startSimulation()
-    {
+    public void startSimulation() {
         simService.restart();
     }
 
     @FXML
-    public void pauseSimulation()
-    {
+    public void pauseSimulation() {
         simService.pause();
-    }    
+    }
 
     @FXML
-    public void changeSettings()
-    {
+    public void changeSettings() {
         pauseSimulation();
         root.setDisable(true);
         FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/Einstellungen.fxml"));
         loader.setController(this);
         Parent p = null;
-        try
-        {
+        try {
             p = loader.load();
-        } catch (IOException e)
-        {
-            System.out.println("Probleme beim Öffnen des Fensters");
+        } catch (IOException e) {
+            System.out.println("Probleme beim ï¿½ffnen des Fensters");
             e.printStackTrace();
             return;
         }
@@ -136,18 +125,13 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
     }
 
     @FXML
-    public void apply()
-    {
+    public void apply() {
         Alert confirm = new Alert(AlertType.CONFIRMATION);
         confirm.setHeaderText("M\u00F6chtest du diese Werte wirklich verwenden?");
-        confirm.setContentText(
-                "Der bisherige Zustand wird gel\u00F6scht und eine komplett\nneue Simulation wird gestartet.");
-        confirm.showAndWait().ifPresent(result ->
-        {
-            if (result == ButtonType.OK)
-            {
-                try
-                {
+        confirm.setContentText("Der bisherige Zustand wird gel\u00F6scht und eine komplett\nneue Simulation wird gestartet.");
+        confirm.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.OK) {
+                try {
                     int newAmeisen = sp.ameisen;
                     int[] newGroesse = new int[] { sp.groesseX, sp.groesseY };
                     int[] newNestP = new int[] { sp.nestX, sp.nestY };
@@ -155,7 +139,6 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
                     int newtimeout = sp.timeout;
                     int newIt = sp.iterations;
                     if (!ameisenF.getText().equals(""))
-                        // System.out.println("Text:" + ameisenF.getText());
                         newAmeisen = Integer.valueOf(ameisenF.getText());
                     if (!groesseXF.getText().equals(""))
                         newGroesse[0] = Integer.valueOf(groesseXF.getText());
@@ -167,41 +150,40 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
                         newtimeout = Integer.valueOf(timeoutF.getText());
                     if (!iterationsF.getText().equals(""))
                         newIt = Integer.valueOf(iterationsF.getText());
-                    boolean groesserNull = newAmeisen > 0 && newGroesse[0] > 0 && newGroesse[1] > 0 && newNestP[0] > 0
-                            && newNestP[1] > 0 && newfutterQ > 0 && newtimeout > 0 && newIt > 0;
-                    if (groesserNull)
-                    {
+                    if (!nestXF.getText().equals(""))
+                        newNestP[0] = Integer.valueOf(nestXF.getText());
+                    if (!nestYF.getText().equals(""))
+                        newNestP[1] = Integer.valueOf(nestYF.getText());
+                    boolean groesserNull = newAmeisen > 0 && newGroesse[0] > 0 && newGroesse[1] > 0 && newNestP[0] > 0 && newNestP[1] > 0
+                            && newfutterQ > 0 && newtimeout > 0 && newIt > 0;
+                    //System.out.println("GroeÃŸer Null: " + groesserNull);
+                    if (groesserNull) {
                         if (newNestP[0] <= newGroesse[0] && newNestP[1] <= newGroesse[1]
-                                && newfutterQ < (newGroesse[0] * newGroesse[1] - 1))
-                        {
+                                && newfutterQ < (newGroesse[0] * newGroesse[1] - 1)) {
                             confirm.close();
                             stageS.close();
                             reset(newAmeisen, newGroesse, newNestP, newfutterQ, newtimeout, newIt);
                             errorB = false;
                         }
                     }
-                } catch (NumberFormatException ex)
-                {
+                } catch (NumberFormatException ex) {
                     System.err.println("Fehler beim Konvertieren!");
                     ex.printStackTrace();
                 }
             }
         });
-        if (errorB)
-        {
+        if (errorB) {
             Alert error = new Alert(AlertType.ERROR);
             error.setHeaderText("Es gab Fehler beim Konvertieren der Einstellungen");
-            error.setContentText(
-                    "\u00DCberpr\u00FCnochmal deine Eingaben\n(Zahlen gr\u00F6\u00DFer 0 und miteinander kompatibel?)");
+            error.setContentText("\u00DCberpr\u00FCnochmal deine Eingaben\n(Zahlen gr\u00F6\u00DFer 0 und miteinander kompatibel?)");
             error.show();
         }
         errorB = true;
         root.setDisable(false);
     }
 
-    public void reset(int ameisen, int[] groesse, int[] nest, int futterQ, int timeout, int iterations)
-    {
-        sp = new Speicher(futterQ, ameisen, 50, groesse[0], groesse[1], nest[0], nest[1], timeout, iterations);
+    public void reset(int ameisen, int[] groesse, int[] nest, int futterQ, int timeout, int iterations) {
+        sp = new Speicher(futterQ, ameisen, 50, groesse[0], groesse[1], nest[0]+1, nest[1]+1, timeout, iterations);
         area = new DrawArea(titledPane, sp, width);
         Simulator sim = new Simulator(sp);
         simService = new SimulationService(sim, sp, width);
@@ -213,8 +195,7 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
     }
 
     @FXML
-    public void cancel()
-    {
+    public void cancel() {
         stageS.close();
         root.setDisable(false);
     }
