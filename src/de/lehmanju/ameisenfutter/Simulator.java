@@ -58,14 +58,7 @@ public class Simulator
 
     public Set<Change> simulate(int iterations, int phTimeout)
     {
-        changes = new HashSet<Change>();
-        for (int n = 0; n < speicher.groesseX; n++)
-        {
-            for (int i = 0; i < speicher.groesseY; i++)
-            {
-
-            }
-        }
+        changes = new HashSet<Change>();     
         for (int count = 0; count < iterations; count++)
         {
             speicher.steps++;
