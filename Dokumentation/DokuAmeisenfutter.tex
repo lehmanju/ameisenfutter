@@ -1,0 +1,170 @@
+\documentclass[a4paper,12pt]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage{listings,lstautogobble}
+\usepackage{xcolor}
+
+\definecolor{RoyalBlue}{cmyk}{1, 0.50, 0, 0}
+
+\lstset{
+keywordstyle=\color{RoyalBlue},
+breaklines=true,
+breakautoindent=true,
+numbers=left,
+numberstyle=\tiny,
+stepnumber=2,
+numbersep=5pt,
+keepspaces=false,
+autogobble=true,
+showstringspaces=false,
+tabsize=2,
+language=Java
+}
+
+%opening
+\title{Dokumentation Aufgabe 2 - Ameisenfutter}
+\author{Julius Lehmann}
+
+\begin{document}
+
+\maketitle
+\section*{Lösungsidee:}
+Das Programm sieht einen Simulationsschritt als Schleife über alle vorhandenen Ameisen an. Das heißt jede Ameise bekommt in einem Simulationsschritt eine neue Position zugewiesen. Die neue Position wird an Hand der Kriterien, die in der Aufgabenstellung formuliert sind, bestimmt, wobei bei dem Fall der zufälligen Bestimmung eines neuen Feldes eine weitere Bedingung hinzugefügt wurde. Da mir aufgefallen ist, dass die Ameisen oft wieder genau das Feld besuchen von dem sie im vorherigen Simulationsschritt gekommen sind, habe ich festgelegt, dass sie nur drei Felder zur Auswahl haben (ohne das bereits besuchte). Beim Start ist diese Bedingung außer Kraft gesetzt, da sie ja kein bereits besuchtes Feld besitzen.
+Außerdem ist es möglich, dass sich mehrere Ameisen gleichzeitig auf einem Feld befinden und unabhängig voneinander einen Weg finden können. So ist ein schnellerer Programmablauf gewährleistet und die Logik ist einfacherer.
+
+\section*{Umsetzung:}
+Der Quellcode ist in der Sprache Java verfasst und die benutzte Grafik-Bibliothek ist JavaFX.
+Um die Darstellung ansprechender zu Gestalten habe ich zum Darstellen der Objekte (Ameisen, Futter, \dots) kleine 18*18 Pixel Grafiken erstellt. Diese werden während der Simulation auf dem Spielfeld verschoben.
+Das Programm ist in mehrere Dateien aufgeteilt:
+\begin{description}
+ \item[DrawArea] stellt die Zeichenfläche an sich und den Informationsaustausch zwischen der Simulation und dem Anwender dar.
+ \item[Launcher] startet das Programm und reagiert auf Benutzerinteraktionen (Einstellungen, Start, Stopp)
+ \item[Simulator] simuliert die Suche der Ameisen. Die Klasse stellt den Kern der Aufgabe dar und führt die Anforderungen der Simulation aus. Alle Werte werden hier verändert.
+ \item[SimulationService] verwaltet die Simulation und führt die Berechnungen in einem neuen Thread aus. So reagiert die Grafik immer noch auf Interaktionen des Benutzers und die Simulation läuft trotzdem zügig im Hintergrund ab. Um einen reibungslosen Ablauf zu gewährleisten benutze ich die extra dafür vorgesehene API von JavaFX.
+ \item[Speicher] speichert die Informationen der Simulation. Während Simulator diese verändert, greifen alle anderen nur auf die Informationen zu und verarbeiten diese.
+ \item[Change] Objekt zur Beschreibung einer Veränderung der Simulation. Er hat die Koordinaten der Veränderungen und einen Buchstaben (P -- Pheromon, A -- Ameise, F -- Futter). Diese Veränderungen werden später sortiert weiterverarbeitet. Außerdem sind hashCode() und equals(Object) überschrieben, um doppelte Veränderungen zu vermeiden.
+ \item[GChange] Objekt zur Beschreibung einer grafischen Veränderung. Es besteht aus dem grafischen Objekt und einem Wahrheitswert, der entweder besagt, dass dieses Objekt von der Spielfeldfläche verschwinden soll, oder es hinzugefügt werden soll.
+ \item[XYPoint] Objekt zur Darstellung von Koordinaten im zweidimensionalen Raum. hashCode und equals überschrieben, um gleiche Punkte auseinander halten zu können.
+\end{description}
+Die letzten drei Objekte dienen lediglich der internen Verwaltung von Daten. Change und XYPoint überschreiben beide jeweils die hashCode- und equals-Funktion, sodass in einem HashSet (von mir oft verwendet) kein Objekt zweimal auftaucht. Das erleichtert später die Durchführung von Änderungen, da dann nicht mehr auf Duplikate getestet werden muss.
+Die grafische Darstellung und die eigentliche Simulation sind voneinander getrennt. Die Simulation findet in einem neuen Thread statt und übergibt nach erfolgreichem Beenden die Daten an den Grafik-Thread, der diese dann darstellt. 
+
+\subsection*{Simulation}
+\subsubsection*{Simulator}
+In Simulator ist die eigentliche Logik der Futtersuche verbaut:
+\begin{lstlisting}
+ public Set<Change> simulate(int iterations, int phTimeout) {
+		changes = new HashSet<Change>();
+		for (int count = 0; count < iterations; count++) {
+			speicher.steps++;
+			if ((speicher.steps % phTimeout) == 0)
+				for (Iterator<XYPoint> it = speicher.phero.iterator(); it.hasNext();) {
+					XYPoint p = it.next();
+					if (speicher.pheromone[p.x][p.y] == 0)
+						it.remove();
+					if (speicher.pheromone[p.x][p.y] > 0) {
+						speicher.pheromone[p.x][p.y]--;
+						changes.add(new Change('P', p.x, p.y));
+					}
+				}
+			for (int aN = 0; aN < speicher.ameisen; aN++) {
+				Ameise cA = amArray[aN];
+				if (cA.futter) // Futter im Inventar, im Nest?
+				{
+					if (cA.x == mitteX && cA.y == mitteY) {
+						cA.futter = false;
+						speicher.futterNest++;
+					} else {
+						speicher.pheromone[cA.x][cA.y]++;
+						speicher.phero.add(new XYPoint(cA.x, cA.y));
+						changes.add(new Change('P', cA.x, cA.y));
+						toNest(cA);
+					}
+				} else {
+					if (speicher.futterVerteilung[cA.x][cA.y] > 0) {
+						cA.futter = true;
+						speicher.futterVerteilung[cA.x][cA.y]--;
+						Change aen = new Change('F', cA.x, cA.y);
+						changes.add(aen);
+					} else {
+						if (nextPPos(cA))
+							continue;
+						else {
+							List<int[]> availDirections = getAvailableDirections(cA);
+							int rD = ThreadLocalRandom.current().nextInt(0, availDirections.size());
+							setAPos(cA, availDirections.get(rD)[0], availDirections.get(rD)[1]);
+							cA.lastDir = availDirections.get(rD)[2];
+						}
+					}
+				}
+			}
+		}
+		return changes;
+	}
+\end{lstlisting}
+Am Anfang jeder Simulation wird ein neues HashSet für Veränderungen aufgebaut. Da die entsprechende Klasse zur Darstellung dieser Veränderungen (Change) die Funktionen equals und hashCode überschreibt, kann dieselbe Änderung mehrmals hinzugefügt werden, ohne dass sie später Einfuss auf die Berechnungen hat, da sie den gleichen hashCode besitzen und somit beim Iterieren nur einmal aufgerufen werden. Danach wird für eine gegebene Anzahl Simulationsschritte (Simulation wird n-mal wiederholt bis die Ergebnisse auf der Bildfläche erscheinen $\rightarrow$ das sorgt für eine bessere Performance und eine schnellere Analyse der Ergebnisse) die Simulation wiederholt.
+
+Zuerst werden die Pheromonspuren aktualisiert und je nach eingestelltem Timeout um einen Schritt verringert. Eine lineare Abnahme ist zwar nicht ideal, da nach Erschöpfung der Futterquelle die Ameisenstraße noch einige Zeit \glqq{}sinnlos\grqq{} bestehen. Da aus der Aufgabenstellung heraus jedoch nicht deutlich gemacht wurde, welche Anforderungen die Verdunstungszeit erfüllen muss, habe ich es dabeui belassen.
+
+Danach werden in einem Simulationsschritt alle Ameisen durchlaufen und je nach \glqq{}Umgebungsfaktoren\grqq{} die neuen Positionen bestimmt. Falls eine Ameise Futter in ihrem Inventar hat, wird sie auf dem schnellsten Weg zum Nest geschickt. Dabei wird die Differenz der aktuellen Position zur Nestposition ausgerechnet und die größere Komponente (x-, oder y-Achse) für das nächste Feld ausgewählt. (Bsp. Ameise a befindet sich auf Position (10|13). Das Nest ist bei (0|0). Das nächste Feld ist also (10|12), da der relative y-Wert (13) größer als der relative x-Wert (10) ist.)
+Dann wird geprüft, ob die Ameise einen Futterplatz erreicht hat (d.h. an der Stelle (x|y) ist eine Portion an Futter > 0 vorhanden). Wenn ja wird ihr eine Futterportion (bool'scher Wert) zugewiesen und dementsprechend Futter vom Futterplatz entfernt.
+Schließlich wird die Basis-Routine aufgerufen. Die Ameise bekommt aus einer Liste von möglichen Positionen (innerhalb des Spielfeldes und nicht das vorherige Feld) eine zufällige zugewiesen.
+\subsubsection*{SimulationService}
+\begin{lstlisting}
+private class ChangeComparator implements Comparator<Change> {
+	@Override
+	public int compare(Change first, Change second) {
+		if (sp.amVerteilung[first.x][first.y] == 0 && sp.amVerteilung[second.x][second.y] > 0)
+		  return -1;
+		else if (sp.amVerteilung[first.x][first.y] > 0 && sp.amVerteilung[second.x][second.y] == 0)
+			return 1;
+		else
+			return 0;
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}
+@Override
+protected Task<List<GChange>> createTask() {
+	Task<List<GChange>> t = new Task<List<GChange>>() {
+		@Override
+		protected List<GChange> call() throws Exception {
+			List<Change> changes = new LinkedList<>(sim.simulate(sp.iterations, sp.timeout));
+			Collections.sort(changes, comp);
+			List<GChange> graphicCh = new LinkedList<>();
+			for (Change ch : changes) {
+				GChange temp;
+				switch (ch.type) {
+				case 'A': {
+					temp = getAntChange(ch.x, ch.y, sp.amVerteilung[ch.x][ch.y] > 0);
+					if (temp != null)
+						graphicCh.add(temp);
+					break;
+				}
+				case 'P': {
+					temp = getPhChange(ch.x, ch.y, sp.pheromone[ch.x][ch.y] > 0);
+					if (temp != null)
+						graphicCh.add(temp);
+					break;
+				}
+				case 'F': {
+					temp = getFutterChange(ch.x, ch.y, sp.futterVerteilung[ch.x][ch.y] > 0);
+					if (temp != null)
+						graphicCh.add(temp);
+					break;
+				}
+				}
+			}
+			return graphicCh;
+		}
+	};
+	t.setOnSucceeded(this);
+	return t;
+}
+\end{lstlisting}
+Jeder Simulationsaufruf bekommt einen eigenen Thread. In jedem Thread wird die Methode simulate(\dots{}) aus Simulator einmal aufgerufen, wobei iterations die Anzahl der Simulationsschritte bestimmt, d.h. es kann im Endeffekt länger als eine einzelne Simulation dauern. Nachdem dieser Thread (Task) abgeschlossen ist, wird das Event zurück an SimulationService gegeben, um dort zu prüfen, ob die Simulation gestoppt wurde. Falls ja, wird der Selbstaufruf von SimulationsService (ScheduledService) unterbrochen und keine Grafikupdates werden generiert. Das sichert eine problemlose Simulation, während bei einem unkontrollierten Abbruch nur Simulations-Teile behandelt worden wären, sodass das Ergebnis nicht gültig wäre.
+Ist ein Task fertig mit der Arbeit, wird aus den gesammelten Change[s] alles nötige herausgefiltert und in GChange[s] umgewandelt. Wobei die Grafiken zum Darstellen der Ameisen wiederverwendet werden, da sich ihre Anzahl nicht im Laufe der gesamten Simulation ändert. Um später nicht eine bestimmte Grafik neu hinzuzufügen, die aber noch nicht entfernt wurde, werden die Updates nach danach sortiert. Dieses Grafikupdate wird daraufhin an Launcher zurückgegeben, der dann nur noch die Objekte in DrawArea hinzufügt oder entfernt, wobei durch die vorherige Sortierung gewährleistet ist, dass erst die entsprechenden Objekte entfernt werden und erst dann neue hinzugefügt werden.
+\subsection*{Grafik}
+
+\end{document}
