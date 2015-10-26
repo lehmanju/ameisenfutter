@@ -54,54 +54,7 @@ Die grafische Darstellung und die eigentliche Simulation sind voneinander getren
 \subsubsection*{Simulator}
 In Simulator ist die eigentliche Logik der Futtersuche verbaut:
 \begin{lstlisting}
- public Set<Change> simulate(int iterations, int phTimeout) {
-		changes = new HashSet<Change>();
-		for (int count = 0; count < iterations; count++) {
-			speicher.steps++;
-			if ((speicher.steps % phTimeout) == 0)
-				for (Iterator<XYPoint> it = speicher.phero.iterator(); it.hasNext();) {
-					XYPoint p = it.next();
-					if (speicher.pheromone[p.x][p.y] == 0)
-						it.remove();
-					if (speicher.pheromone[p.x][p.y] > 0) {
-						speicher.pheromone[p.x][p.y]--;
-						changes.add(new Change('P', p.x, p.y));
-					}
-				}
-			for (int aN = 0; aN < speicher.ameisen; aN++) {
-				Ameise cA = amArray[aN];
-				if (cA.futter) // Futter im Inventar, im Nest?
-				{
-					if (cA.x == mitteX && cA.y == mitteY) {
-						cA.futter = false;
-						speicher.futterNest++;
-					} else {
-						speicher.pheromone[cA.x][cA.y]++;
-						speicher.phero.add(new XYPoint(cA.x, cA.y));
-						changes.add(new Change('P', cA.x, cA.y));
-						toNest(cA);
-					}
-				} else {
-					if (speicher.futterVerteilung[cA.x][cA.y] > 0) {
-						cA.futter = true;
-						speicher.futterVerteilung[cA.x][cA.y]--;
-						Change aen = new Change('F', cA.x, cA.y);
-						changes.add(aen);
-					} else {
-						if (nextPPos(cA))
-							continue;
-						else {
-							List<int[]> availDirections = getAvailableDirections(cA);
-							int rD = ThreadLocalRandom.current().nextInt(0, availDirections.size());
-							setAPos(cA, availDirections.get(rD)[0], availDirections.get(rD)[1]);
-							cA.lastDir = availDirections.get(rD)[2];
-						}
-					}
-				}
-			}
-		}
-		return changes;
-	}
+ 
 \end{lstlisting}
 Am Anfang jeder Simulation wird ein neues HashSet für Veränderungen aufgebaut. Da die entsprechende Klasse zur Darstellung dieser Veränderungen (Change) die Funktionen equals und hashCode überschreibt, kann dieselbe Änderung mehrmals hinzugefügt werden, ohne dass sie später Einfuss auf die Berechnungen hat, da sie den gleichen hashCode besitzen und somit beim Iterieren nur einmal aufgerufen werden. Danach wird für eine gegebene Anzahl Simulationsschritte (Simulation wird n-mal wiederholt bis die Ergebnisse auf der Bildfläche erscheinen $\rightarrow$ das sorgt für eine bessere Performance und eine schnellere Analyse der Ergebnisse) die Simulation wiederholt.
 
@@ -112,59 +65,17 @@ Dann wird geprüft, ob die Ameise einen Futterplatz erreicht hat (d.h. an der St
 Schließlich wird die Basis-Routine aufgerufen. Die Ameise bekommt aus einer Liste von möglichen Positionen (innerhalb des Spielfeldes und nicht das vorherige Feld) eine zufällige zugewiesen.
 \subsubsection*{SimulationService}
 \begin{lstlisting}
-private class ChangeComparator implements Comparator<Change> {
-	@Override
-	public int compare(Change first, Change second) {
-		if (sp.amVerteilung[first.x][first.y] == 0 && sp.amVerteilung[second.x][second.y] > 0)
-		  return -1;
-		else if (sp.amVerteilung[first.x][first.y] > 0 && sp.amVerteilung[second.x][second.y] == 0)
-			return 1;
-		else
-			return 0;
-	}
-}
+
 \end{lstlisting}
 \begin{lstlisting}
-@Override
-protected Task<List<GChange>> createTask() {
-	Task<List<GChange>> t = new Task<List<GChange>>() {
-		@Override
-		protected List<GChange> call() throws Exception {
-			List<Change> changes = new LinkedList<>(sim.simulate(sp.iterations, sp.timeout));
-			Collections.sort(changes, comp);
-			List<GChange> graphicCh = new LinkedList<>();
-			for (Change ch : changes) {
-				GChange temp;
-				switch (ch.type) {
-				case 'A': {
-					temp = getAntChange(ch.x, ch.y, sp.amVerteilung[ch.x][ch.y] > 0);
-					if (temp != null)
-						graphicCh.add(temp);
-					break;
-				}
-				case 'P': {
-					temp = getPhChange(ch.x, ch.y, sp.pheromone[ch.x][ch.y] > 0);
-					if (temp != null)
-						graphicCh.add(temp);
-					break;
-				}
-				case 'F': {
-					temp = getFutterChange(ch.x, ch.y, sp.futterVerteilung[ch.x][ch.y] > 0);
-					if (temp != null)
-						graphicCh.add(temp);
-					break;
-				}
-				}
-			}
-			return graphicCh;
-		}
-	};
-	t.setOnSucceeded(this);
-	return t;
-}
+
 \end{lstlisting}
 Jeder Simulationsaufruf bekommt einen eigenen Thread. In jedem Thread wird die Methode simulate(\dots{}) aus Simulator einmal aufgerufen, wobei iterations die Anzahl der Simulationsschritte bestimmt, d.h. es kann im Endeffekt länger als eine einzelne Simulation dauern. Nachdem dieser Thread (Task) abgeschlossen ist, wird das Event zurück an SimulationService gegeben, um dort zu prüfen, ob die Simulation gestoppt wurde. Falls ja, wird der Selbstaufruf von SimulationsService (ScheduledService) unterbrochen und keine Grafikupdates werden generiert. Das sichert eine problemlose Simulation, während bei einem unkontrollierten Abbruch nur Simulations-Teile behandelt worden wären, sodass das Ergebnis nicht gültig wäre.
-Ist ein Task fertig mit der Arbeit, wird aus den gesammelten Change[s] alles nötige herausgefiltert und in GChange[s] umgewandelt. Wobei die Grafiken zum Darstellen der Ameisen wiederverwendet werden, da sich ihre Anzahl nicht im Laufe der gesamten Simulation ändert. Um später nicht eine bestimmte Grafik neu hinzuzufügen, die aber noch nicht entfernt wurde, werden die Updates nach danach sortiert. Dieses Grafikupdate wird daraufhin an Launcher zurückgegeben, der dann nur noch die Objekte in DrawArea hinzufügt oder entfernt, wobei durch die vorherige Sortierung gewährleistet ist, dass erst die entsprechenden Objekte entfernt werden und erst dann neue hinzugefügt werden.
+Ist ein Task fertig mit der Arbeit, wird aus den gesammelten Change[s] alles nötige herausgefiltert und in GChange[s] umgewandelt. Wobei die Grafiken zum Darstellen der Ameisen wiederverwendet werden, da sich ihre Anzahl nicht im Laufe der gesamten Simulation ändert. Um später nicht eine bestimmte Grafik neu hinzuzufügen, die aber noch nicht entfernt wurde, werden die Updates nach Entfernen/Hinzufügen sortiert. Dieses Grafikupdate wird daraufhin an Launcher zurückgegeben, der dann nur noch die Objekte in DrawArea hinzufügt oder entfernt, wobei durch die vorherige Sortierung gewährleistet ist, dass erst die entsprechenden Objekte entfernt werden und erst dann neue hinzugefügt werden.
 \subsection*{Grafik}
+Die Grafik des Programmes besteht aus zwei FXML-Dateien und den Klassen DrawArea und Launcher.
+Eine FXML-Datei beschreibt den Aufbau des Hauptfensters, das aus der Menüleiste und der Simulationsfläche besteht. Zum Starten der Simulation muss der Button "`Start"' im Simulation betätigt werden. Um die Simulation zu pausieren, bzw. die Einstellungen zu ändern, habe ich außerdem noch zwei weitere Schaltflächen hinzugefügt.
+
+Über die Schaltfäche "`Einstellungen"' gelangt man schließlich zu einem neuen Fenster (die zweite FXML-Datei). Hier können viele Einstellungen, die für den Simulationsablauf entscheidend sind verändert werden.
 
 \end{document}
