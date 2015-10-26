@@ -38,86 +38,79 @@ public class Simulator {
 		initialize();
 	}
 
-	private void initialize() {
-		amArray = new Ameise[speicher.ameisen];
-		mitteX = (int) Math.floor(speicher.groesseX / 2);
-		mitteY = (int) Math.floor(speicher.groesseY / 2);
-		for (int i = 0; i < speicher.ameisen; i++) {
-			amArray[i] = new Ameise();
-			amArray[i].x = mitteX;
-			amArray[i].y = mitteY;
-			amArray[i].futter = false;
-			amArray[i].lastDir = -1;
-		}
-	}
+    private void initialize()
+    {
+        amArray = new Ameise[speicher.ameisen];        
+        for (int i = 0; i < speicher.ameisen; i++)
+        {
+            amArray[i] = new Ameise();
+            amArray[i].x = speicher.nestX;
+            amArray[i].y = speicher.nestY;
+            amArray[i].futter = false;
+            amArray[i].lastDir = -1;
+        }
+    }
 
-	public Set<Change> simulate(int iterations, int phTimeout) {
-		changes = new HashSet<Change>();
-		for (int count = 0; count < iterations; count++) {
-			speicher.steps++;
-			if ((speicher.steps % phTimeout) == 0)
-				for (Iterator<XYPoint> it = speicher.phero.iterator(); it.hasNext();) {
-					XYPoint p = it.next();
-					if (speicher.pheromone[p.x][p.y] == 0)
-						it.remove();
-					if (speicher.pheromone[p.x][p.y] > 0) {
-						speicher.pheromone[p.x][p.y]--;
-						changes.add(new Change('P', p.x, p.y));
-					}
-				}
-			for (int aN = 0; aN < speicher.ameisen; aN++) {
-				Ameise cA = amArray[aN];
-				if (cA.futter) // Futter im Inventar, im Nest?
-				{
-					if (cA.x == mitteX && cA.y == mitteY) {
-						cA.futter = false;
-						speicher.futterNest++;
-					} else {
-						speicher.pheromone[cA.x][cA.y]++;
-						speicher.phero.add(new XYPoint(cA.x, cA.y));
-						changes.add(new Change('P', cA.x, cA.y));
-						toNest(cA);
-					}
-				} else {
-					if (speicher.futterVerteilung[cA.x][cA.y] > 0) {
-						cA.futter = true;
-						speicher.futterVerteilung[cA.x][cA.y]--;
-						Change aen = new Change('F', cA.x, cA.y);
-						changes.add(aen);
-					} else {
-						if (nextPPos(cA))
-							continue;
-						else {
-							List<int[]> availDirections = getAvailableDirections(cA);
-							int rD = ThreadLocalRandom.current().nextInt(0, availDirections.size());
-							setAPos(cA, availDirections.get(rD)[0], availDirections.get(rD)[1]);
-							cA.lastDir = availDirections.get(rD)[2];
-						}
-					}
-				}
-			}
-		}
-		return changes;
-	}
-
-	private boolean nextPPos(Ameise a) {
-		List<int[]> availDirections = getAvailableDirections(a);
-		int[] xyD = { 0, 0 };
-		int maxPhero = 0;
-		boolean notNull = false;
-		for (int in = 0; in < availDirections.size(); in++) {
-			int[] ar = availDirections.get(in);
-			if (speicher.pheromone[ar[0] + a.x][ar[1] + a.y] > 0)
-				notNull = true;
-			if (speicher.pheromone[ar[0] + a.x][ar[1] + a.y] > maxPhero) {
-				maxPhero = speicher.pheromone[ar[0] + a.x][ar[1] + a.y];
-				xyD = ar;
-			}
-		}
-		if (notNull)
-			setAPos(a, xyD[0], xyD[1]);
-		return notNull;
-	}
+    public Set<Change> simulate(int iterations, int phTimeout)
+    {
+        changes = new HashSet<Change>();     
+        for (int count = 0; count < iterations; count++)
+        {
+            speicher.steps++;
+            if ((speicher.steps % phTimeout) == 0)
+                for (Iterator<XYPoint> it = speicher.phero.iterator(); it.hasNext();)
+                {
+                    XYPoint p = it.next();
+                    if (speicher.pheromone[p.x][p.y] == 0)
+                        it.remove();
+                    if (speicher.pheromone[p.x][p.y] > 0)
+                    {
+                        speicher.pheromone[p.x][p.y]--;
+                        changes.add(new Change('P', p.x, p.y));
+                    }
+                }
+            for (int aN = 0; aN < speicher.ameisen; aN++)
+            {
+                Ameise cA = amArray[aN];
+                if (cA.futter) //Futter im Inventar, im Nest?
+                {
+                    if (cA.x == mitteX && cA.y == mitteY)
+                    {
+                        cA.futter = false;
+                        speicher.futterNest++;
+                    } else
+                    {
+                        speicher.pheromone[cA.x][cA.y]++;
+                        speicher.phero.add(new XYPoint(cA.x, cA.y));
+                        changes.add(new Change('P', cA.x, cA.y));
+                        toNest(cA);
+                    }
+                } else
+                {
+                    if (speicher.futterVerteilung[cA.x][cA.y] > 0)
+                    {
+                        cA.futter = true;
+                        speicher.futterVerteilung[cA.x][cA.y]--;
+                        Change aen = new Change('F', cA.x, cA.y);
+                        changes.add(aen);
+                    } else
+                    {
+                        if (nextPPos(cA))
+                            continue;
+                        else
+                        {
+                            List<int[]> availDirections = getAvailableDirections(cA);
+                            int rD = ThreadLocalRandom.current().nextInt(0, availDirections.size());
+                            setAPos(cA, availDirections.get(rD)[0], availDirections.get(rD)[1]);
+                            cA.lastDir = availDirections.get(rD)[2];
+                        }
+                    }
+                }
+            }
+        }
+        return changes;
+    }
+>>>>>>> 7937bb9cf1559556c3276c136196adfc55ad253d
 
 	private void toNest(Ameise a) {
 		int dx = mitteX - a.x;
@@ -141,6 +134,7 @@ public class Simulator {
 		changes.add(ae2);
 	}
 
+<<<<<<< HEAD
 	protected void setAPos(Ameise a, int direction) {
 		switch (direction) {
 		case 0:
@@ -157,6 +151,19 @@ public class Simulator {
 			break;
 		}
 	}
+=======
+    protected void setAPos(Ameise a, int dx, int dy)
+    {
+        speicher.amVerteilung[a.x][a.y]--;//Ameise von aktueller Position "subtrahieren"
+        Change ae1 = new Change('A', a.x, a.y);
+        a.x += dx;
+        a.y += dy;
+        speicher.amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzuf�gen
+        Change ae2 = new Change('A', a.x, a.y);
+        changes.add(ae1);
+        changes.add(ae2);
+    }
+>>>>>>> 7937bb9cf1559556c3276c136196adfc55ad253d
 
 	public boolean containsFutter(int x, int y) {
 		return speicher.futterVerteilung[x][y] > 0;
