@@ -32,67 +32,57 @@ public class SimulationService extends ScheduledService<List<GChange>> implement
     Image pheromon = new Image("Pheromon.png");
     Image nest = new Image("Nest.png");
 
-    private class ChangeComparator implements Comparator<Change>
-    {
-        @Override
-        public int compare(Change first, Change second)
-        {
-            if (sp.amVerteilung[first.x][first.y] == 0 && sp.amVerteilung[second.x][second.y] > 0)
-                return -1;
-            else if (sp.amVerteilung[first.x][first.y] > 0 && sp.amVerteilung[second.x][second.y] == 0)
-                return 1;
-            else
-                return 0;
-        }
-    }
+	private class ChangeComparator implements Comparator<Change> {
+		@Override
+		public int compare(Change first, Change second) {
+			if (sp.amVerteilung[first.x][first.y] == 0 && sp.amVerteilung[second.x][second.y] > 0)
+				return -1;
+			else if (sp.amVerteilung[first.x][first.y] > 0 && sp.amVerteilung[second.x][second.y] == 0)
+				return 1;
+			else
+				return 0;
+		}
+	}
 
-    @Override
-    protected Task<List<GChange>> createTask()
-    {
-        Task<List<GChange>> t = new Task<List<GChange>>()
-        {
+	@Override
+	protected Task<List<GChange>> createTask() {
+		Task<List<GChange>> t = new Task<List<GChange>>() {
 
-            @Override
-            protected List<GChange> call() throws Exception
-            {
-                List<Change> changes = new LinkedList<>(sim.simulate(sp.iterations, sp.timeout));
-                Collections.sort(changes, comp);
-                List<GChange> graphicCh = new LinkedList<>();
-                for (Change ch : changes)
-                {
-                    GChange temp;
-                    switch (ch.type)
-                    {
-                    case 'A':
-                    {
-                        temp = getAntChange(ch.x, ch.y, sp.amVerteilung[ch.x][ch.y] > 0);
-                        if (temp != null)
-                            graphicCh.add(temp);
-                        break;
-                    }
-                    case 'P':
-                    {
-                        temp = getPhChange(ch.x, ch.y, sp.pheromone[ch.x][ch.y] > 0);
-                        if (temp != null)
-                            graphicCh.add(temp);
-                        break;
-                    }
-                    case 'F':
-                    {
-                        temp = getFutterChange(ch.x, ch.y, sp.futterVerteilung[ch.x][ch.y] > 0);
-                        if (temp != null)
-                            graphicCh.add(temp);
-                        break;
-                    }
-                    }
-                }
-                return graphicCh;
-            }
+			@Override
+			protected List<GChange> call() throws Exception {
+				List<Change> changes = new LinkedList<>(sim.simulate(sp.iterations, sp.timeout));
+				Collections.sort(changes, comp);
+				List<GChange> graphicCh = new LinkedList<>();
+				for (Change ch : changes) {
+					GChange temp;
+					switch (ch.type) {
+					case 'A': {
+						temp = getAntChange(ch.x, ch.y, sp.amVerteilung[ch.x][ch.y] > 0);
+						if (temp != null)
+							graphicCh.add(temp);
+						break;
+					}
+					case 'P': {
+						temp = getPhChange(ch.x, ch.y, sp.pheromone[ch.x][ch.y] > 0);
+						if (temp != null)
+							graphicCh.add(temp);
+						break;
+					}
+					case 'F': {
+						temp = getFutterChange(ch.x, ch.y, sp.futterVerteilung[ch.x][ch.y] > 0);
+						if (temp != null)
+							graphicCh.add(temp);
+						break;
+					}
+					}
+				}
+				return graphicCh;
+			}
 
-        };
-        t.setOnSucceeded(this);
-        return t;
-    }
+		};
+		t.setOnSucceeded(this);
+		return t;
+	}
 
     private GChange getAntChange(int x, int y, boolean draw)
     {
