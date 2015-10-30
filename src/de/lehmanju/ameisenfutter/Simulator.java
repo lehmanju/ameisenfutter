@@ -74,7 +74,7 @@ public class Simulator {
                 Ameise cA = amArray[aN];
                 if (cA.futter) //Futter im Inventar, im Nest?
                 {
-                    if (cA.x == mitteX && cA.y == mitteY)
+                    if (cA.x == speicher.nestX && cA.y == speicher.nestY)
                     {
                         cA.futter = false;
                         speicher.futterNest++;
@@ -113,29 +113,29 @@ public class Simulator {
     
     private boolean nextPPos(Ameise a)
        {
-            List<int[]> availDirections = getAvailableDirections(a);
+            List<int[]> availDirections = getAvailableDirections(a); //alle moeglichen Richtungen, in die die Ameise sich bewegen kann
             int[] xyD = { 0, 0 };
             int maxPhero = 0;
-            boolean notNull = false;
+            boolean erfolgreich = false;
             for (int in = 0; in < availDirections.size(); in++)
             {
-                int[] ar = availDirections.get(in);
-                if (speicher.pheromone[ar[0] + a.x][ar[1] + a.y] > 0)
-                    notNull = true;
+                int[] ar = availDirections.get(in);                
                 if (speicher.pheromone[ar[0] + a.x][ar[1] + a.y] > maxPhero)
                 {
                     maxPhero = speicher.pheromone[ar[0] + a.x][ar[1] + a.y];
-                    xyD = ar;
+                    xyD[0] = ar[0];
+                    xyD[1] = ar[1];
+                    erfolgreich = true;
                 }
             }
-            if (notNull)
+            if (erfolgreich)
                 setAPos(a, xyD[0], xyD[1]);
-            return notNull;
+            return erfolgreich;
         }
 
 	private void toNest(Ameise a) {
-		int dx = mitteX - a.x;
-		int dy = mitteY - a.y;
+		int dx = speicher.nestX - a.x;
+		int dy = speicher.nestY - a.y;
 		if (dx == dy || Math.abs(dx) > Math.abs(dy))
 			setAPos(a, (int) Math.signum(dx), 0);
 		else
@@ -166,16 +166,11 @@ public class Simulator {
         Change ae1 = new Change('A', a.x, a.y);
         a.x += dx;
         a.y += dy;
-        speicher.amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzuf�gen
+        speicher.amVerteilung[a.x][a.y]++;//Ameise bei neuer Position hinzufuegen
         Change ae2 = new Change('A', a.x, a.y);
 		changes.add(ae1);
 		changes.add(ae2);
-    }
-
-
-	public boolean containsFutter(int x, int y) {
-		return speicher.futterVerteilung[x][y] > 0;
-	}
+    }	
 
 	public List<int[]> getAvailableDirections(Ameise a) {
 		ArrayList<int[]> tempL = new ArrayList<>();
