@@ -68,7 +68,7 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
 		for (GChange ch : initCh)
 			area.drawImage(ch.view, ch.draw);
 		simService.setOnSucceeded(this);
-		simService.setPeriod(new Duration(2000));
+		simService.setPeriod(new Duration(500));
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
 		try {
 			p = loader.load();
 		} catch (IOException e) {
-			System.out.println("Probleme beim �ffnen des Fensters");
+			System.out.println("Probleme beim Oeffnen des Fensters");
 			e.printStackTrace();
 			return;
 		}
@@ -151,7 +151,7 @@ public class Launcher extends Application implements EventHandler<WorkerStateEve
 						newNestP[1] = Integer.valueOf(nestYF.getText());
 					boolean groesserNull = newAmeisen > 0 && newGroesse[0] > 0 && newGroesse[1] > 0 && newNestP[0] > 0
 							&& newNestP[1] > 0 && newfutterQ > 0 && newtimeout > 0 && newIt > 0;
-					// System.out.println("Groeßer Null: " + groesserNull);
+					// System.out.println("Groesser Null: " + groesserNull);
 					if (groesserNull) {
 						if (newNestP[0] <= newGroesse[0] && newNestP[1] <= newGroesse[1]
 								&& newfutterQ < (newGroesse[0] * newGroesse[1] - 1)) {

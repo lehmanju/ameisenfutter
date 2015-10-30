@@ -76,10 +76,11 @@ Ist ein Task fertig mit der Arbeit, wird aus den gesammelten Change[s] alles nö
 Die Grafik des Programmes besteht aus zwei FXML-Dateien und den Klassen DrawArea und Launcher.
 Eine FXML-Datei beschreibt den Aufbau des Hauptfensters, das aus der Menüleiste und der Simulationsfläche besteht. Zum Starten der Simulation muss der Button "`Start"' im Simulation betätigt werden. Um die Simulation zu pausieren, bzw. die Einstellungen zu ändern, habe ich außerdem noch zwei weitere Schaltflächen hinzugefügt.
 
-Über die Schaltfäche "`Einstellungen"' gelangt man schließlich zu einem neuen Fenster (die zweite FXML-Datei). Hier können viele Einstellungen, die für den Simulationsablauf entscheidend sind verändert werden. Unter anderem die Ameisenanzahl, Feldgröße und vor allem der Faktor für den Zeitraffer.
+Über die Schaltfäche "`Einstellungen"' gelangt man schließlich zu einem neuen Fenster (die zweite FXML-Datei). Hier können viele Einstellungen, die für den Simulationsablauf entscheidend sind verändert werden. Unter anderem die Ameisenanzahl, Feldgröße und vor allem der Faktor für den Zeitraffer. Man muss dabei nicht alle Einstellungen verändern, da leere Felder mit den vorherigen Werten belegt werden.
 
 Der Aufbau des Spielfeldes erfolgt durch Erzeugung einer maximal 1024*1024 Pixel großen Grafik, die den Hintergrund des Spielfeldes darstellt. Über "`BackgroundImage"' wird nun ein entsprechender Hintergrund für das Simulationsfeld gesetzt, das dann solange wiederholt wird, bis das Objekt komplett bedeckt ist. Mit Hilfe dieses Features wird die Grafik schnell und effizient aufgebaut, während die Nutzung von einzelnen Objekten deutliche Performance-Einbuße verursacht.
 
 Die aktuellen Werte werden im Titel eines "`TitledPane"' dargestellt. Dadurch behält der Nutzer die Übersicht über die Anzahl der Ameisen auf einem Feld und Pheromonstärke, etc.
 
+Damit die Grafik nicht während der Simulation hängt, habe ich eine Zeitspanne von 0,5 Sekunden zwischen zwei Grafikupdates eingefügt. Das sorgt für ein besseres Verständnis und eine bessere Beobachtung des Vorgangs.
 \end{document}
